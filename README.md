@@ -49,3 +49,9 @@ standby always go to sleep.
   address removed.
 
 Built on the [`lighthouse-ble`](https://github.com/g4bri3lDev/lighthouse-ble) library.
+
+## Trademarks
+
+Steam, SteamVR, Valve and Valve Index are trademarks of Valve Corporation. The images in
+`custom_components/steamvr_lighthouse/brand/` are Valve's brand assets; they are not covered by
+this project's license. This is an unofficial integration, not affiliated with or endorsed by Valve.
