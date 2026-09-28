@@ -87,7 +87,7 @@ class LighthouseCoordinator(PassiveBluetoothDataUpdateCoordinator):
             ) from err
 
     async def async_update_device_info(self) -> None:
-        """Read model, firmware and serial once and store them on the device."""
+        """Read model ID, firmware and serial once and store them on the device."""
         try:
             info = await self.station.read_device_info()
         except LighthouseError as err:
@@ -103,7 +103,7 @@ class LighthouseCoordinator(PassiveBluetoothDataUpdateCoordinator):
             return
         registry.async_update_device(
             device.id,
-            model=info.model,
+            model_id=info.model,
             sw_version=info.firmware,
             hw_version=info.hardware,
             serial_number=info.serial,

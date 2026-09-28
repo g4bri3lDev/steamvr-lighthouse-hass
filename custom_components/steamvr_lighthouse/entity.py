@@ -25,7 +25,8 @@ class LighthouseEntity(PassiveBluetoothCoordinatorEntity[LighthouseCoordinator])
         self._attr_device_info = DeviceInfo(
             connections={(CONNECTION_BLUETOOTH, coordinator.address)},
             name=coordinator.entry.title,
-            manufacturer="Valve",
+            manufacturer=coordinator.station.manufacturer,
+            model=coordinator.station.product_name,
         )
 
     @property

@@ -23,7 +23,7 @@
     "lighthouse_ble"
   ],
   "requirements": [
-    "lighthouse-ble==0.1.1"
+    "lighthouse-ble==0.2.0"
   ],
   "version": "0.0.0"
 }

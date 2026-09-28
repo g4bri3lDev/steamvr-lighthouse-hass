@@ -67,7 +67,8 @@ async def test_device_info_updated(
     assert device is not None
     assert device.name == NAME
     assert device.manufacturer == "Valve"
-    assert device.model == DEVICE_INFO.model
+    assert device.model == "Base Station 2.0"
+    assert device.model_id == DEVICE_INFO.model
     assert device.sw_version == DEVICE_INFO.firmware
     assert device.hw_version == DEVICE_INFO.hardware
     assert device.serial_number == DEVICE_INFO.serial
@@ -88,7 +89,9 @@ async def test_device_info_failure_is_ignored(
         (dr.CONNECTION_BLUETOOTH, ADDRESS), config_entry.entry_id
     )
     assert device is not None
-    assert device.model is None
+    assert device.model == "Base Station 2.0"
+    assert device.model_id is None
+    assert device.sw_version is None
 
 
 @pytest.mark.usefixtures("mock_station")
