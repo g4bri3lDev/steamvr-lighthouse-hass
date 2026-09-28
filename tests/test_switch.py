@@ -1,5 +1,6 @@
 """Tests for the power switch and command error handling."""
 
+from dataclasses import replace
 from types import SimpleNamespace
 from unittest.mock import PropertyMock, patch
 
@@ -14,6 +15,7 @@ from homeassistant.const import (
     ATTR_ENTITY_ID,
     SERVICE_TURN_OFF,
     SERVICE_TURN_ON,
+    STATE_OFF,
     STATE_ON,
     Platform,
 )
@@ -190,3 +192,41 @@ async def test_command_errors(
         await hass.services.async_call(domain, service, data, blocking=True)
     assert raised.value.translation_key == key
     assert hass.states.get(SWITCH).state == STATE_ON
+
+
+async def test_turn_off_falls_back_to_sleep_when_standby_unsupported(
+    hass: HomeAssistant, mock_station: SimpleNamespace
+) -> None:
+    # Firmware generation is only known after the first command connects.
+    mock_station.set_power.side_effect = [UnsupportedError("no standby"), None]
+    await setup_integration(hass, make_entry({"off_action": "standby"}))
+    await hass.services.async_call(
+        SWITCH_DOMAIN, SERVICE_TURN_OFF, {ATTR_ENTITY_ID: SWITCH}, blocking=True
+    )
+    assert [call.args for call in mock_station.set_power.await_args_list] == [
+        (PowerState.STANDBY,),
+        (PowerState.SLEEP,),
+    ]
+
+
+async def test_switch_state_follows_commands(
+    hass: HomeAssistant, config_entry: MockConfigEntry, mock_station: SimpleNamespace
+) -> None:
+    await setup_integration(hass, config_entry)
+    station = config_entry.runtime_data.station
+
+    async def apply(target: PowerState) -> None:
+        station._set_state(replace(station.state, power=target, assumed=True))
+
+    mock_station.set_power.side_effect = apply
+    await hass.services.async_call(
+        SWITCH_DOMAIN, SERVICE_TURN_OFF, {ATTR_ENTITY_ID: SWITCH}, blocking=True
+    )
+    assert hass.states.get(SWITCH).state == STATE_OFF
+
+    mock_station.set_power.side_effect = LighthouseConnectionError("gone")
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            SWITCH_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: SWITCH}, blocking=True
+        )
+    assert hass.states.get(SWITCH).state == STATE_OFF

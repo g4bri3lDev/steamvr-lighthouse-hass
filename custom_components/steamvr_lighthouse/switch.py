@@ -6,7 +6,7 @@ from typing import Any
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from lighthouse_ble import PowerState
+from lighthouse_ble import PowerState, UnsupportedError
 
 from .const import CONF_OFF_ACTION, DEFAULT_OFF_ACTION, OffAction
 from .coordinator import LighthouseConfigEntry
@@ -50,8 +50,17 @@ class LighthousePowerSwitch(LighthouseEntity, SwitchEntity):
         off_action = self.coordinator.entry.options.get(
             CONF_OFF_ACTION, DEFAULT_OFF_ACTION
         )
-        target = PowerState.SLEEP
-        # Stations whose firmware can't do standby fall back to sleep.
-        if off_action == OffAction.STANDBY and station.supports_standby is not False:
-            target = PowerState.STANDBY
-        await self.coordinator.async_run_command(partial(station.set_power, target))
+        if off_action != OffAction.STANDBY or station.supports_standby is False:
+            await self.coordinator.async_run_command(
+                partial(station.set_power, PowerState.SLEEP)
+            )
+            return
+
+        async def standby_or_sleep() -> None:
+            try:
+                await station.set_power(PowerState.STANDBY)
+            except UnsupportedError:
+                # Firmware without standby is only detected once a command connects.
+                await station.set_power(PowerState.SLEEP)
+
+        await self.coordinator.async_run_command(standby_or_sleep)
