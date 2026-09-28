@@ -1,0 +1,29 @@
+{
+  "domain": "steamvr_lighthouse",
+  "name": "SteamVR Lighthouse",
+  "bluetooth": [
+    {
+      "connectable": true,
+      "local_name": "LHB-*",
+      "manufacturer_id": 1373
+    }
+  ],
+  "codeowners": [
+    "@g4bri3lDev"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "bluetooth_adapters"
+  ],
+  "documentation": "https://github.com/g4bri3lDev/steamvr-lighthouse-hass",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/g4bri3lDev/steamvr-lighthouse-hass/issues",
+  "loggers": [
+    "lighthouse_ble"
+  ],
+  "requirements": [
+    "lighthouse-ble==0.1.1"
+  ],
+  "version": "0.0.0"
+}

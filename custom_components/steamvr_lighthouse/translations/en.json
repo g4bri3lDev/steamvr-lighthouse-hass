@@ -1,0 +1,43 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "This base station is already configured.",
+      "no_devices_found": "No unconfigured base stations are in range. Make sure a Bluetooth adapter or proxy can see the station.",
+      "not_supported": "This device is not a supported Valve Index (Lighthouse 2.0) base station."
+    },
+    "flow_title": "{name}",
+    "step": {
+      "bluetooth_confirm": {
+        "description": "Do you want to set up {name}?"
+      },
+      "user": {
+        "data": {
+          "address": "Base station"
+        },
+        "data_description": {
+          "address": "The station's name is printed on its back (LHB-…)."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "off_action": "Turning the power switch off"
+        },
+        "data_description": {
+          "off_action": "Sleep stops the rotors and saves the most power; waking takes about 11 seconds. Standby keeps them spinning and wakes in about a second."
+        }
+      }
+    }
+  },
+  "selector": {
+    "off_action": {
+      "options": {
+        "sleep": "Puts the station to sleep",
+        "standby": "Puts the station in standby"
+      }
+    }
+  }
+}

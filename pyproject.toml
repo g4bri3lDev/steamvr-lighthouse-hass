@@ -1,0 +1,63 @@
+# Tooling config only. Home Assistant loads custom_components/steamvr_lighthouse from disk.
+[project]
+name = "steamvr-lighthouse-hass"
+version = "0.0.0"
+requires-python = ">=3.14.2"
+# Mirrors manifest.json "requirements".
+dependencies = ["lighthouse-ble==0.1.1"]
+
+[dependency-groups]
+# PHCC pins the Home Assistant version under test: 0.13.365 -> homeassistant 2026.9.2
+dev = [
+    "pytest-homeassistant-custom-component==0.13.365",
+    "ruff==0.15.17",
+    "mypy==1.18.2",
+    # Requirements of HA's bluetooth and usb components (not installed by PHCC), pinned as in HA 2026.9.2.
+    "aiousbwatcher==1.1.2",
+    "bleak==3.0.2",
+    "bleak-retry-connector==4.7.0",
+    "bluetooth-adapters==2.4.0",
+    "bluetooth-auto-recovery==1.6.4",
+    "bluetooth-data-tools==1.29.24",
+    "dbus-fast==5.0.22",
+    "habluetooth==6.26.11",
+    "serialx==1.10.0",
+]
+
+[tool.uv]
+package = false
+
+
+[tool.mypy]
+# Strict typing for the integration itself, like Home Assistant core requires.
+# Tests are excluded: pytest-homeassistant-custom-component ships no type information.
+strict = true
+files = ["custom_components"]
+disallow_any_generics = true
+warn_unreachable = true
+explicit_package_bases = true
+namespace_packages = true
+mypy_path = "."
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+norecursedirs = [".git", ".venv", "config"]
+addopts = "--cov=custom_components.steamvr_lighthouse --cov-report=term-missing"
+
+[tool.ruff]
+target-version = "py314"
+exclude = [".venv", "config"]
+
+[tool.ruff.lint]
+select = ["ASYNC", "B", "C4", "D", "E", "F", "FLY", "G", "I", "ISC", "LOG", "PGH", "PIE", "PT", "RET", "RSE", "RUF", "SIM", "SLOT", "T20", "TID", "TRY", "UP", "W"]
+ignore = ["D202", "D203", "D213", "D406", "D407", "E501", "TRY003", "TRY300", "TRY400"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+known-first-party = ["custom_components", "tests"]
+combine-as-imports = true
+split-on-trailing-comma = false
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D1"]
