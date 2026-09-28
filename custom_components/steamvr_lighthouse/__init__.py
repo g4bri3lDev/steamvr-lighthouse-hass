@@ -13,6 +13,7 @@ from .const import DOMAIN
 from .coordinator import LighthouseConfigEntry, LighthouseCoordinator
 
 PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
     Platform.BUTTON,
     Platform.SELECT,
     Platform.SENSOR,

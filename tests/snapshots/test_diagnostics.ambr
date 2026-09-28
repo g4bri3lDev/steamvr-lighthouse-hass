@@ -1,0 +1,34 @@
+# serializer version: 1
+# name: test_diagnostics
+  dict({
+    'available': True,
+    'entry': dict({
+      'data': dict({
+        'address': '**REDACTED**',
+      }),
+      'disabled_by': None,
+      'discovery_keys': '**REDACTED**',
+      'domain': 'steamvr_lighthouse',
+      'minor_version': 1,
+      'options': dict({
+      }),
+      'pref_disable_new_entities': False,
+      'pref_disable_polling': False,
+      'source': 'user',
+      'subentries': list([
+      ]),
+      'title': 'LHB-747A9BC5',
+      'unique_id': '**REDACTED**',
+      'version': 1,
+    }),
+    'last_advertisement_raw': '000201010b0600',
+    'rssi': -60,
+    'state': dict({
+      'assumed': False,
+      'channel': 1,
+      'faulty': False,
+      'power': 'on',
+    }),
+    'supports_standby': None,
+  })
+# ---
