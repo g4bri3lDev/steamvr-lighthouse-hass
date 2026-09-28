@@ -12,7 +12,12 @@ from lighthouse_ble import BaseStationState, BaseStationV2, parse_advertisement
 from .const import DOMAIN
 from .coordinator import LighthouseConfigEntry, LighthouseCoordinator
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [
+    Platform.BUTTON,
+    Platform.SELECT,
+    Platform.SENSOR,
+    Platform.SWITCH,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: LighthouseConfigEntry) -> bool:

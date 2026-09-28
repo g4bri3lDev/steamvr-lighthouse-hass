@@ -4,16 +4,13 @@ from collections.abc import Generator
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, PropertyMock, patch
 
-from homeassistant.const import CONF_ADDRESS
 from lighthouse_ble import BaseStationV2, DeviceInfo
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.syrupy import HomeAssistantSnapshotExtension
 from syrupy.assertion import SnapshotAssertion
 
-from custom_components.steamvr_lighthouse.const import DOMAIN
-
-from . import ADDRESS, NAME
+from . import make_entry
 
 DEVICE_INFO = DeviceInfo(
     model="1004",
@@ -72,6 +69,4 @@ def mock_station() -> Generator[SimpleNamespace]:
 @pytest.fixture
 def config_entry() -> MockConfigEntry:
     """Return a config entry for the test station."""
-    return MockConfigEntry(
-        domain=DOMAIN, unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}, title=NAME
-    )
+    return make_entry()

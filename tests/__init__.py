@@ -11,9 +11,12 @@ from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
     async_get_advertisement_callback,
 )
+from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.steamvr_lighthouse.const import DOMAIN
 
 ADDRESS = "AA:BB:CC:DD:EE:01"
 NAME = "LHB-747A9BC5"
@@ -65,6 +68,17 @@ def service_info(
 def inject(hass: HomeAssistant, info: BluetoothServiceInfoBleak) -> None:
     """Feed an advertisement into HA's bluetooth manager."""
     async_get_advertisement_callback(hass)(info)
+
+
+def make_entry(options: dict[str, str] | None = None) -> MockConfigEntry:
+    """Return a config entry for the test station."""
+    return MockConfigEntry(
+        domain=DOMAIN,
+        unique_id=ADDRESS,
+        data={CONF_ADDRESS: ADDRESS},
+        title=NAME,
+        options=options or {},
+    )
 
 
 async def setup_integration(hass: HomeAssistant, entry: MockConfigEntry) -> None:

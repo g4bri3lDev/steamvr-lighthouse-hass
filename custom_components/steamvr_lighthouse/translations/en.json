@@ -52,6 +52,24 @@
           "unknown": "Unknown"
         }
       }
+    },
+    "switch": {
+      "power": {
+        "name": "Power"
+      }
+    },
+    "select": {
+      "power_mode": {
+        "name": "Power mode",
+        "state": {
+          "on": "On",
+          "standby": "Standby",
+          "sleep": "Sleep"
+        }
+      },
+      "channel": {
+        "name": "Channel"
+      }
     }
   },
   "exceptions": {
