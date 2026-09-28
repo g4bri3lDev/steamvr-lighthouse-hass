@@ -39,5 +39,30 @@
         "standby": "Puts the station in standby"
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "power_state": {
+        "name": "Power state",
+        "state": {
+          "on": "On",
+          "booting": "Booting",
+          "standby": "Standby",
+          "sleep": "Sleep",
+          "unknown": "Unknown"
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Could not reach {name}. Make sure a Bluetooth adapter or proxy is in range."
+    },
+    "not_supported": {
+      "message": "{name} does not support this."
+    },
+    "device_not_found": {
+      "message": "{name} is not in range of any Bluetooth adapter or proxy yet."
+    }
   }
 }
