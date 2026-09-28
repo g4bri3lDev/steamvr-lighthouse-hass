@@ -13,7 +13,8 @@
           "path": "custom_components/steamvr_lighthouse/manifest.json",
           "jsonpath": "$.version"
         }
-      ]
+      ],
+      "initial-version": "0.1.0"
     }
   }
 }
