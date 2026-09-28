@@ -52,6 +52,8 @@ async def test_setup_retries_without_device(
     config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(config_entry.entry_id)
     assert config_entry.state is ConfigEntryState.SETUP_RETRY
+    assert config_entry.reason is not None
+    assert NAME in config_entry.reason
 
 
 @pytest.mark.usefixtures("mock_station")
@@ -96,7 +98,7 @@ async def test_device_info_failure_is_ignored(
 
 @pytest.mark.usefixtures("mock_station")
 async def test_unavailable_and_recovery(
-    hass: HomeAssistant, config_entry: MockConfigEntry
+    hass: HomeAssistant, config_entry: MockConfigEntry, caplog: pytest.LogCaptureFixture
 ) -> None:
     start = time.monotonic()
     await setup_integration(hass, config_entry)
@@ -107,7 +109,9 @@ async def test_unavailable_and_recovery(
         async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=stale))
         await hass.async_block_till_done()
     assert hass.states.get(POWER_STATE).state == STATE_UNAVAILABLE
+    assert f"{NAME} is unavailable" in caplog.text
 
     inject(hass, service_info())
     await hass.async_block_till_done()
     assert hass.states.get(POWER_STATE).state == "on"
+    assert f"{NAME} is available again" in caplog.text

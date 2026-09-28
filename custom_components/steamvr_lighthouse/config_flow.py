@@ -1,9 +1,12 @@
 """Config flow for SteamVR Lighthouse."""
 
+import asyncio
+import logging
 from typing import Any
 
 from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
+    async_ble_device_from_address,
     async_discovered_service_info,
 )
 from homeassistant.config_entries import (
@@ -13,7 +16,7 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.const import CONF_ADDRESS
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
@@ -24,19 +27,32 @@ import voluptuous as vol
 
 from .const import CONF_OFF_ACTION, DEFAULT_OFF_ACTION, DOMAIN, OffAction
 
+_LOGGER = logging.getLogger(__name__)
+
+# A station that stops responding mid-check would otherwise hold the dialog and a
+# connection slot indefinitely.
+CONNECT_TIMEOUT = 45
+
 
 def _is_v2_station(info: BluetoothServiceInfoBleak) -> bool:
     advertisement = parse_advertisement(info.name, info.manufacturer_data)
     return advertisement is not None and advertisement.version is Version.V2
 
 
-async def _can_connect(info: BluetoothServiceInfoBleak) -> bool:
-    """Check the station accepts a connection by reading its device information."""
+async def _test_connection(hass: HomeAssistant, address: str) -> str | None:
+    """Read the station's device information; return an error key on failure."""
+    ble_device = async_ble_device_from_address(hass, address, connectable=True)
+    if ble_device is None:
+        return "cannot_connect"
     try:
-        await BaseStationV2(info.device).read_device_info()
-    except LighthouseError:
-        return False
-    return True
+        async with asyncio.timeout(CONNECT_TIMEOUT):
+            await BaseStationV2(ble_device).read_device_info()
+    except LighthouseError, TimeoutError:
+        return "cannot_connect"
+    except Exception:
+        _LOGGER.exception("Unexpected error while connecting to %s", address)
+        return "unknown"
+    return None
 
 
 class SteamVRLighthouseConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -75,11 +91,10 @@ class SteamVRLighthouseConfigFlow(ConfigFlow, domain=DOMAIN):
         name = self._discovery.name
         errors: dict[str, str] = {}
         if user_input is not None:
-            if await _can_connect(self._discovery):
-                return self.async_create_entry(
-                    title=name, data={CONF_ADDRESS: self._discovery.address}
-                )
-            errors["base"] = "cannot_connect"
+            address = self._discovery.address
+            if (error := await _test_connection(self.hass, address)) is None:
+                return self.async_create_entry(title=name, data={CONF_ADDRESS: address})
+            errors["base"] = error
         self._set_confirm_only()
         return self.async_show_form(
             step_id="bluetooth_confirm",
@@ -96,12 +111,11 @@ class SteamVRLighthouseConfigFlow(ConfigFlow, domain=DOMAIN):
             address = user_input[CONF_ADDRESS]
             await self.async_set_unique_id(address, raise_on_progress=False)
             self._abort_if_unique_id_configured()
-            info = self._discovered[address]
-            if await _can_connect(info):
+            if (error := await _test_connection(self.hass, address)) is None:
                 return self.async_create_entry(
-                    title=info.name, data={CONF_ADDRESS: address}
+                    title=self._discovered[address].name, data={CONF_ADDRESS: address}
                 )
-            errors["base"] = "cannot_connect"
+            errors["base"] = error
 
         if not self._discovered:
             configured = self._async_current_ids(include_ignore=False)
@@ -110,7 +124,10 @@ class SteamVRLighthouseConfigFlow(ConfigFlow, domain=DOMAIN):
                     self._discovered[info.address] = info
         if not self._discovered:
             return self.async_abort(reason="no_devices_found")
-        names = {address: info.name for address, info in self._discovered.items()}
+        names = {
+            address: f"{info.name} ({address})"
+            for address, info in self._discovered.items()
+        }
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({vol.Required(CONF_ADDRESS): vol.In(names)}),

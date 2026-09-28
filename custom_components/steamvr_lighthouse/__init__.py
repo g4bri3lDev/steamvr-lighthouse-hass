@@ -1,6 +1,8 @@
 """The SteamVR Lighthouse integration."""
 
 from homeassistant.components.bluetooth import (
+    BluetoothReachabilityIntent,
+    async_address_reachability_diagnostics,
     async_ble_device_from_address,
     async_last_service_info,
 )
@@ -29,7 +31,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: LighthouseConfigEntry) -
         raise ConfigEntryNotReady(
             translation_domain=DOMAIN,
             translation_key="device_not_found",
-            translation_placeholders={"name": entry.title},
+            translation_placeholders={
+                "name": entry.title,
+                "reason": async_address_reachability_diagnostics(
+                    hass, address.upper(), BluetoothReachabilityIntent.CONNECTION
+                ),
+            },
         )
     info = async_last_service_info(hass, address, connectable=True)
     advertisement = (

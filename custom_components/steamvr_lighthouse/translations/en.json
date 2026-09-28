@@ -20,7 +20,8 @@
       }
     },
     "error": {
-      "cannot_connect": "Could not connect to the station. Make sure a Bluetooth adapter or proxy with a free connection slot is in range, then try again."
+      "cannot_connect": "Could not connect to the station. Make sure a Bluetooth adapter or proxy with a free connection slot is in range, then try again.",
+      "unknown": "Unexpected error while connecting to the station. Check the Home Assistant log for details."
     }
   },
   "options": {
@@ -83,7 +84,7 @@
       "message": "{name} does not support this."
     },
     "device_not_found": {
-      "message": "{name} is not in range of any Bluetooth adapter or proxy yet."
+      "message": "{name} is not reachable yet: {reason}"
     }
   }
 }

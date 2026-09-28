@@ -54,10 +54,22 @@ class LighthouseCoordinator(PassiveBluetoothDataUpdateCoordinator):
 
     @callback
     @override
+    def _async_handle_unavailable(
+        self, service_info: BluetoothServiceInfoBleak
+    ) -> None:
+        """Log once when the station stops advertising."""
+        if self._available:
+            _LOGGER.info("%s is unavailable", self.entry.title)
+        super()._async_handle_unavailable(service_info)
+
+    @callback
+    @override
     def _async_handle_bluetooth_event(
         self, service_info: BluetoothServiceInfoBleak, change: BluetoothChange
     ) -> None:
         """Update the station from an advertisement."""
+        if not self._available:
+            _LOGGER.info("%s is available again", self.entry.title)
         self.station.set_ble_device(service_info.device)
         self.rssi = service_info.rssi
         advertisement = parse_advertisement(

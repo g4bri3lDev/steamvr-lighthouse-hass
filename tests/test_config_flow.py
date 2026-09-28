@@ -1,5 +1,6 @@
 """Tests for the config and options flow."""
 
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -7,18 +8,30 @@ from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_USER
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.setup import async_setup_component
 from lighthouse_ble import LighthouseConnectionError
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.steamvr_lighthouse.const import DOMAIN
 
-from . import ADDRESS, NAME, service_info
+from . import ADDRESS, NAME, inject, service_info
 
 DISCOVERED = (
     "custom_components.steamvr_lighthouse.config_flow.async_discovered_service_info"
 )
 OTHER_ADDRESS = "AA:BB:CC:DD:EE:07"
+
+
+@pytest.fixture(autouse=True)
+async def station_in_range(hass: HomeAssistant) -> None:
+    """Make the test station known to HA's bluetooth manager."""
+    await async_setup_component(hass, "bluetooth", {})
+    inject(hass, service_info())
+    await hass.async_block_till_done()
+    # Bluetooth discovery starts its own flow for the injected station; tests start theirs.
+    for flow in hass.config_entries.flow.async_progress():
+        hass.config_entries.flow.async_abort(flow["flow_id"])
 
 
 async def test_bluetooth_discovery(
@@ -36,7 +49,7 @@ async def test_bluetooth_discovery(
     assert result["title"] == NAME
     assert result["data"] == {CONF_ADDRESS: ADDRESS}
     assert result["result"].unique_id == ADDRESS
-    mock_station.read_device_info.assert_awaited_once()
+    mock_station.read_device_info.assert_awaited()
 
 
 async def test_bluetooth_confirm_cannot_connect(
@@ -92,6 +105,60 @@ async def test_bluetooth_discovery_not_lighthouse(
     assert result["reason"] == "not_supported"
 
 
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        pytest.param(
+            LighthouseConnectionError("no slot"), "cannot_connect", id="connection"
+        ),
+        pytest.param(TimeoutError(), "cannot_connect", id="timeout"),
+        pytest.param(RuntimeError("boom"), "unknown", id="unexpected"),
+    ],
+)
+async def test_bluetooth_confirm_errors(
+    hass: HomeAssistant,
+    mock_station: SimpleNamespace,
+    error: Exception,
+    expected: str,
+) -> None:
+    mock_station.read_device_info.side_effect = error
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=service_info()
+    )
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["errors"] == {"base": expected}
+
+
+async def test_bluetooth_confirm_device_gone(
+    hass: HomeAssistant, mock_station: SimpleNamespace
+) -> None:
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_BLUETOOTH},
+        data=service_info(address=OTHER_ADDRESS),
+    )
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["errors"] == {"base": "cannot_connect"}
+    mock_station.read_device_info.assert_not_awaited()
+
+
+async def test_bluetooth_confirm_times_out(
+    hass: HomeAssistant, mock_station: SimpleNamespace
+) -> None:
+    async def hang() -> None:
+        await asyncio.sleep(10)
+
+    mock_station.read_device_info.side_effect = hang
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=service_info()
+    )
+    with patch(
+        "custom_components.steamvr_lighthouse.config_flow.CONNECT_TIMEOUT", 0.01
+    ):
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["errors"] == {"base": "cannot_connect"}
+
+
 @pytest.mark.usefixtures("mock_station")
 async def test_user_step_lists_discovered(hass: HomeAssistant) -> None:
     discovered = [
@@ -105,7 +172,7 @@ async def test_user_step_lists_discovered(hass: HomeAssistant) -> None:
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "user"
     address_field = result["data_schema"].schema[CONF_ADDRESS]
-    assert address_field.container == {ADDRESS: NAME}
+    assert address_field.container == {ADDRESS: f"{NAME} ({ADDRESS})"}
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ADDRESS: ADDRESS}
