@@ -18,6 +18,9 @@
           "address": "The station's name is printed on its back (LHB-…)."
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to the station. Make sure a Bluetooth adapter or proxy with a free connection slot is in range, then try again."
     }
   },
   "options": {

@@ -19,7 +19,7 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
     SelectSelectorMode,
 )
-from lighthouse_ble import Version, parse_advertisement
+from lighthouse_ble import BaseStationV2, LighthouseError, Version, parse_advertisement
 import voluptuous as vol
 
 from .const import CONF_OFF_ACTION, DEFAULT_OFF_ACTION, DOMAIN, OffAction
@@ -30,6 +30,15 @@ def _is_v2_station(info: BluetoothServiceInfoBleak) -> bool:
     return advertisement is not None and advertisement.version is Version.V2
 
 
+async def _can_connect(info: BluetoothServiceInfoBleak) -> bool:
+    """Check the station accepts a connection by reading its device information."""
+    try:
+        await BaseStationV2(info.device).read_device_info()
+    except LighthouseError:
+        return False
+    return True
+
+
 class SteamVRLighthouseConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for SteamVR Lighthouse base stations."""
 
@@ -38,7 +47,7 @@ class SteamVRLighthouseConfigFlow(ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize the flow."""
         self._discovery: BluetoothServiceInfoBleak | None = None
-        self._discovered: dict[str, str] = {}
+        self._discovered: dict[str, BluetoothServiceInfoBleak] = {}
 
     @staticmethod
     @callback
@@ -64,38 +73,48 @@ class SteamVRLighthouseConfigFlow(ConfigFlow, domain=DOMAIN):
         """Confirm setting up a discovered station."""
         assert self._discovery is not None
         name = self._discovery.name
+        errors: dict[str, str] = {}
         if user_input is not None:
-            return self.async_create_entry(
-                title=name, data={CONF_ADDRESS: self._discovery.address}
-            )
+            if await _can_connect(self._discovery):
+                return self.async_create_entry(
+                    title=name, data={CONF_ADDRESS: self._discovery.address}
+                )
+            errors["base"] = "cannot_connect"
         self._set_confirm_only()
         return self.async_show_form(
-            step_id="bluetooth_confirm", description_placeholders={"name": name}
+            step_id="bluetooth_confirm",
+            description_placeholders={"name": name},
+            errors=errors,
         )
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Pick one of the stations currently in range."""
+        errors: dict[str, str] = {}
         if user_input is not None:
             address = user_input[CONF_ADDRESS]
             await self.async_set_unique_id(address, raise_on_progress=False)
             self._abort_if_unique_id_configured()
-            return self.async_create_entry(
-                title=self._discovered[address], data={CONF_ADDRESS: address}
-            )
+            info = self._discovered[address]
+            if await _can_connect(info):
+                return self.async_create_entry(
+                    title=info.name, data={CONF_ADDRESS: address}
+                )
+            errors["base"] = "cannot_connect"
 
-        configured = self._async_current_ids(include_ignore=False)
-        for info in async_discovered_service_info(self.hass, connectable=True):
-            if info.address not in configured and _is_v2_station(info):
-                self._discovered[info.address] = info.name
+        if not self._discovered:
+            configured = self._async_current_ids(include_ignore=False)
+            for info in async_discovered_service_info(self.hass, connectable=True):
+                if info.address not in configured and _is_v2_station(info):
+                    self._discovered[info.address] = info
         if not self._discovered:
             return self.async_abort(reason="no_devices_found")
+        names = {address: info.name for address, info in self._discovered.items()}
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {vol.Required(CONF_ADDRESS): vol.In(self._discovered)}
-            ),
+            data_schema=vol.Schema({vol.Required(CONF_ADDRESS): vol.In(names)}),
+            errors=errors,
         )
 
 

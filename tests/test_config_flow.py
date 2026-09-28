@@ -1,11 +1,13 @@
 """Tests for the config and options flow."""
 
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_USER
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from lighthouse_ble import LighthouseConnectionError
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -19,7 +21,9 @@ DISCOVERED = (
 OTHER_ADDRESS = "AA:BB:CC:DD:EE:07"
 
 
-async def test_bluetooth_discovery(hass: HomeAssistant) -> None:
+async def test_bluetooth_discovery(
+    hass: HomeAssistant, mock_station: SimpleNamespace
+) -> None:
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=service_info()
     )
@@ -32,6 +36,24 @@ async def test_bluetooth_discovery(hass: HomeAssistant) -> None:
     assert result["title"] == NAME
     assert result["data"] == {CONF_ADDRESS: ADDRESS}
     assert result["result"].unique_id == ADDRESS
+    mock_station.read_device_info.assert_awaited_once()
+
+
+async def test_bluetooth_confirm_cannot_connect(
+    hass: HomeAssistant, mock_station: SimpleNamespace
+) -> None:
+    mock_station.read_device_info.side_effect = LighthouseConnectionError("no slot")
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=service_info()
+    )
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "bluetooth_confirm"
+    assert result["errors"] == {"base": "cannot_connect"}
+
+    mock_station.read_device_info.side_effect = None
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
 
 
 async def test_bluetooth_discovery_without_payload(hass: HomeAssistant) -> None:
@@ -70,6 +92,7 @@ async def test_bluetooth_discovery_not_lighthouse(
     assert result["reason"] == "not_supported"
 
 
+@pytest.mark.usefixtures("mock_station")
 async def test_user_step_lists_discovered(hass: HomeAssistant) -> None:
     discovered = [
         service_info(),
@@ -90,6 +113,29 @@ async def test_user_step_lists_discovered(hass: HomeAssistant) -> None:
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == NAME
     assert result["data"] == {CONF_ADDRESS: ADDRESS}
+
+
+async def test_user_step_cannot_connect(
+    hass: HomeAssistant, mock_station: SimpleNamespace
+) -> None:
+    mock_station.read_device_info.side_effect = LighthouseConnectionError("no slot")
+    with patch(DISCOVERED, return_value=[service_info()]):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_ADDRESS: ADDRESS}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "user"
+    assert result["errors"] == {"base": "cannot_connect"}
+
+    mock_station.read_device_info.side_effect = None
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_ADDRESS: ADDRESS}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == NAME
 
 
 @pytest.mark.parametrize(
