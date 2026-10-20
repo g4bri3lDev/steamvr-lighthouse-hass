@@ -27,7 +27,7 @@ Each station's name (`LHB-…`) is printed on its back.
 | Power mode (select) | On, standby or sleep. |
 | Power state (sensor) | On, booting, standby, sleep or unknown. Waking from sleep takes about 11 seconds and shows as booting. |
 | Channel (select) | Tracking channel 1–16. |
-| Identify (button) | Blinks the station's LED white for a few seconds. |
+| Identify (button) | Blinks the station's LED white for about 20 seconds. |
 | Problem (binary sensor) | On when the station reports an error. |
 | Signal strength (sensor) | Bluetooth RSSI; disabled by default. |
 
