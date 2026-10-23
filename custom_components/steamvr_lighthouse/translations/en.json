@@ -86,5 +86,11 @@
     "device_not_found": {
       "message": "{name} is not reachable yet: {reason}"
     }
+  },
+  "issues": {
+    "deprecated": {
+      "title": "SteamVR Lighthouse is now built into Home Assistant",
+      "description": "Home Assistant 2026.11 includes these base stations as the SteamVR Base Station integration, so this custom integration will not get further updates.\n\nTo switch, remove each base station from SteamVR Lighthouse, uninstall SteamVR Lighthouse in the Marketplace and restart Home Assistant. The stations are then discovered by SteamVR Base Station. Entity IDs change, so update automations and dashboards that use them. The power switch always puts stations to sleep; use the power mode select for standby."
+    }
   }
 }
