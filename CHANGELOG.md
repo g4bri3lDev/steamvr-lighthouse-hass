@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/g4bri3lDev/steamvr-lighthouse-hass/compare/v0.1.0...v0.2.0) (2026-11-04)
+
+
+### Features
+
+* point users to the built-in SteamVR Base Station integration ([5c1c1c3](https://github.com/g4bri3lDev/steamvr-lighthouse-hass/commit/5c1c1c34b29eb8783fd9d06401e17a8553c10316))
+
 ## 0.1.0 (2026-09-28)
 
 
