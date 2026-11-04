@@ -9,9 +9,10 @@ from homeassistant.components.bluetooth import (
 from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import issue_registry as ir
 from lighthouse_ble import BaseStationState, BaseStationV2, parse_advertisement
 
-from .const import DOMAIN
+from .const import CORE_DOCS_URL, DOMAIN
 from .coordinator import LighthouseConfigEntry, LighthouseCoordinator
 
 PLATFORMS: list[Platform] = [
@@ -25,6 +26,15 @@ PLATFORMS: list[Platform] = [
 
 async def async_setup_entry(hass: HomeAssistant, entry: LighthouseConfigEntry) -> bool:
     """Set up a base station from a config entry."""
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        "deprecated",
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key="deprecated",
+        learn_more_url=CORE_DOCS_URL,
+    )
     address: str = entry.data[CONF_ADDRESS]
     ble_device = async_ble_device_from_address(hass, address, connectable=True)
     if ble_device is None:
@@ -61,3 +71,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: LighthouseConfigEntry) -
 async def async_unload_entry(hass: HomeAssistant, entry: LighthouseConfigEntry) -> bool:
     """Unload a config entry."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: LighthouseConfigEntry) -> None:
+    """Drop the deprecation notice once the last station is removed."""
+    if not hass.config_entries.async_entries(DOMAIN):
+        ir.async_delete_issue(hass, DOMAIN, "deprecated")

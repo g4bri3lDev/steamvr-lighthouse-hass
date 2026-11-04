@@ -5,6 +5,8 @@ from typing import Final
 
 DOMAIN: Final = "steamvr_lighthouse"
 
+CORE_DOCS_URL: Final = "https://www.home-assistant.io/integrations/steamvr_base_station"
+
 CONF_OFF_ACTION: Final = "off_action"
 
 

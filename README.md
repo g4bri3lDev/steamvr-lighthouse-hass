@@ -1,5 +1,14 @@
 # SteamVR Lighthouse for Home Assistant
 
+> [!WARNING]
+> **Deprecated.** Home Assistant 2026.11 includes these base stations as the built-in
+> [SteamVR Base Station](https://www.home-assistant.io/integrations/steamvr_base_station)
+> integration, so this custom integration will not get further updates. To switch, remove each
+> station here, uninstall this integration in the Marketplace, restart Home Assistant and add the
+> stations again with SteamVR Base Station. Entity IDs change, so update automations and
+> dashboards. The power switch always puts stations to sleep; use the power mode select for
+> standby.
+
 Control Valve Index (Lighthouse 2.0) base stations from Home Assistant over Bluetooth: switch
 them on, to standby or to sleep, change their channel and see their state live.
 
@@ -27,7 +36,7 @@ Each station's name (`LHB-…`) is printed on its back.
 | Power mode (select) | On, standby or sleep. |
 | Power state (sensor) | On, booting, standby, sleep or unknown. Waking from sleep takes about 11 seconds and shows as booting. |
 | Channel (select) | Tracking channel 1–16. |
-| Identify (button) | Blinks the station's LED white for a few seconds. |
+| Identify (button) | Blinks the station's LED white for about 20 seconds. |
 | Problem (binary sensor) | On when the station reports an error. |
 | Signal strength (sensor) | Bluetooth RSSI; disabled by default. |
 
